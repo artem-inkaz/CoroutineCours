@@ -26,35 +26,44 @@ class MainActivity : AppCompatActivity() {
             onRun()
         }
 
+        btnRun2.setOnClickListener {
+            onRun2()
+        }
+
         btnCancel.setOnClickListener {
             onCancel()
         }
     }
 //В методе onRun стартуем корутину, а внутри нее еще одну корутину.
     private fun onRun(){
-        scope.launch {
-            log("parent coroutine, start")
-
-           val job= launch {
-                TimeUnit.MILLISECONDS.sleep(1000)
-            }
-            val job2= launch {
-                TimeUnit.MILLISECONDS.sleep(1000)
-            }
-// Теперь в точке вызова join родительская корутина будет ждать, пока не выполнится дочерняя.
-// join - это suspend функция, поэтому она только приостановит выполнение родительской корутины,
-// но не заблокирует ее поток.
-            log("parent coroutine, wait until child completes")
-            job.join()
-            job2.join()
-            log("parent coroutine, end")
+        log("onRun, start")
+    // корутину c параметром start = LAZY.
+    // Это не даст корутине начать работу сразу после создания.
+    // В примере стартуем в onRun2()
+        job = scope.launch (start = CoroutineStart.LAZY) {
+            log("coroutine, start")
+            TimeUnit.MILLISECONDS.sleep(1000)
+            log("coroutine, end")
         }
+            log("onRun, end")
     }
-//20:46:38.889 parent coroutine, start [DefaultDispatcher-worker-1]
-//20:46:38.893 parent coroutine, wait until children complete [DefaultDispatcher-worker-1]
-//20:46:40.395 parent coroutine, end [DefaultDispatcher-worker-3]
-//Запускаем дочерние корутины, а потом для обеих вызываем join, тем самым дожидаясь окончания их работы.
-// Дочерние корутины отработают параллельно, поэтому общее время работы родительской корутины составит 1500.
+
+//11:28:30.526 onRun, start [main]
+//11:28:30.532 onRun, end [main]
+//11:28:32.317 onRun2, start [main]
+//11:28:32.321 onRun2, end [main]
+//11:28:32.328 coroutine, start [DefaultDispatcher-worker-1]
+//11:28:33.331 coroutine, end [DefaultDispatcher-worker-1]
+//
+//Жмем кнопку Run. Метод onRun создает корутину и завершается. Но корутина не стартует.
+// Через пару секунд жмем кнопку Run2, и корутина начинает работу. Метод start ничего не блокирует.
+// Он стартует корутину в отдельном потоке, а метод onRun2 быстро завершается.
+    private fun onRun2(){
+        log("onRun2, start")
+        job.start()
+        log("onRun2, end")
+    }
+
 
 
     private fun onCancel(){
