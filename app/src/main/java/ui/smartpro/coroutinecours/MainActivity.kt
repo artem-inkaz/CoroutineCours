@@ -35,29 +35,37 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onRun(){
-        log("onRun, Start")
-//используется фоновый поток из диспетчера по умолчанию
-       job = scope.launch {
-           log("coroutine, start")
-           var x = 0
-           while (x < 5) {
-               TimeUnit.MILLISECONDS.sleep(1000)
-               log("coroutine, ${x++}")
-           }
-           log("coroutine, end")
-       }
+        log("onRun, start")
+
+        scope.launch {
+            log("coroutine, start")
+            TimeUnit.MILLISECONDS.sleep(1000)
+            log("coroutine, end")
+        }
+
+        log("onRun, middle")
+
+        scope.launch {
+            log("coroutine2, start")
+            TimeUnit.MILLISECONDS.sleep(1500)
+            log("coroutine2, end")
+        }
+
         log("onRun, end")
     }
-//11:24:53.416 onRun, start [main]
-//11:24:53.466 onRun, end [main]
-//11:24:53.474 coroutine, start [DefaultDispatcher-worker-1]
-//11:24:54.475 coroutine, 0 [DefaultDispatcher-worker-1]
-//11:24:55.476 coroutine, 1 [DefaultDispatcher-worker-1]
-//11:24:56.135 onCancel [main]
-//11:24:56.480 coroutine, 2 [DefaultDispatcher-worker-1]
-//11:24:57.484 coroutine, 3 [DefaultDispatcher-worker-1]
-//11:24:58.486 coroutine, 4 [DefaultDispatcher-worker-1]
-//11:24:58.486 coroutine, end [DefaultDispatcher-worker-1]
+//Метод onRun быстро выполнился, создав и отправив на выполнение пару корутин.
+// Корутины стартовали практически одновременно, в отдельных потоках сделали свою работу и завершились.
+// Между собой они никак не связаны.
+//
+//Эти примеры показывают, что билдер launch быстро выполняется, не блокируя и не задерживая основной поток.
+// А корутины уходят в отдельный поток и выполняются там.
+//11:07:54.350 onRun, start [main]
+//11:07:54.351 onRun, middle [main]
+//11:07:54.352 onRun, end [main]
+//11:07:54.352 coroutine2, start [DefaultDispatcher-worker-4]
+//11:07:54.354 coroutine, start [DefaultDispatcher-worker-1]
+//11:07:55.355 coroutine, end [DefaultDispatcher-worker-1]
+//11:07:55.855 coroutine2, end [DefaultDispatcher-worker-4]
 
 
 
