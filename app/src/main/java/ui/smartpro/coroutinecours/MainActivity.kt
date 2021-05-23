@@ -35,35 +35,37 @@ class MainActivity : AppCompatActivity() {
         scope.launch {
             log("parent coroutine, start")
 
-            launch {
+           val job= launch {
                 log("child coroutine, start")
                 TimeUnit.MILLISECONDS.sleep(1000)
                 log("child coroutine, end")
             }
-            log("parent coroutine,end")
+// Теперь в точке вызова join родительская корутина будет ждать, пока не выполнится дочерняя.
+// join - это suspend функция, поэтому она только приостановит выполнение родительской корутины,
+// но не заблокирует ее поток.
+            log("parent coroutine, wait until child completes")
+            job.join()
+
+            log("parent coroutine, end")
         }
     }
-// Билдер, вызванный в корутине не задерживает выполнение этой корутины.
-// Он только создает и запускает дочернюю корутину, которая уходит работать в свой поток.
-// А родительская корутина продолжает работу.
-//20:32:16.221 parent coroutine, start [DefaultDispatcher-worker-1]
-//20:32:16.222 parent coroutine, end [DefaultDispatcher-worker-1]
-//20:32:16.222 child coroutine, start [DefaultDispatcher-worker-3]
-//20:32:17.224 child coroutine, end [DefaultDispatcher-worker-3]
-//Родительская корутина выполнила весь свой код не дожидаясь выполнения дочерней.
-// А дочерняя корутина в отдельном потоке выполнила свой код.
-//
-//Хоть родительская корутина и выполнила сразу же весь свой код,
-// но ее статус поменяется на Завершена только когда выполнится дочерняя корутина.
-// Потому что родительская корутина подписывается на дочерние и ждет их завершения,
-// прежде чем официально завершиться. Т.е. то, что корутина выполнила свой код, может и не означать,
-// что она имеет статус Завершена.
 
+//20:40:01.927 parent coroutine, start [DefaultDispatcher-worker-1]
+//20:40:01.928 parent coroutine, wait for child [DefaultDispatcher-worker-1]
+//20:40:01.928 child coroutine, start [DefaultDispatcher-worker-2]
+//20:40:02.930 child coroutine, end [DefaultDispatcher-worker-2]
+//20:40:02.931 parent coroutine, end [DefaultDispatcher-worker-2]
+//код родительской корутины завершился после того, как отработала дочерняя корутина.
+//
+// Обратите внимание на потоки.
+// Родительская корутина начала свою работу в потоке DefaultDispatcher-worker-1,
+// а завершила в потоке в DefaultDispatcher-worker-2, в котором дочерняя корутина выполнялась.
+// Это особенность работы suspend функций и диспетчеров.
 
 
     private fun onCancel(){
         log("onCancel")
-//        job.cancel()
+        job.cancel()
     }
 
     override fun onDestroy() {
