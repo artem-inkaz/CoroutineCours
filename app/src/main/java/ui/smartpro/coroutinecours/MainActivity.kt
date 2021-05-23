@@ -36,31 +36,25 @@ class MainActivity : AppCompatActivity() {
             log("parent coroutine, start")
 
            val job= launch {
-                log("child coroutine, start")
                 TimeUnit.MILLISECONDS.sleep(1000)
-                log("child coroutine, end")
+            }
+            val job2= launch {
+                TimeUnit.MILLISECONDS.sleep(1000)
             }
 // Теперь в точке вызова join родительская корутина будет ждать, пока не выполнится дочерняя.
 // join - это suspend функция, поэтому она только приостановит выполнение родительской корутины,
 // но не заблокирует ее поток.
             log("parent coroutine, wait until child completes")
             job.join()
-
+            job2.join()
             log("parent coroutine, end")
         }
     }
-
-//20:40:01.927 parent coroutine, start [DefaultDispatcher-worker-1]
-//20:40:01.928 parent coroutine, wait for child [DefaultDispatcher-worker-1]
-//20:40:01.928 child coroutine, start [DefaultDispatcher-worker-2]
-//20:40:02.930 child coroutine, end [DefaultDispatcher-worker-2]
-//20:40:02.931 parent coroutine, end [DefaultDispatcher-worker-2]
-//код родительской корутины завершился после того, как отработала дочерняя корутина.
-//
-// Обратите внимание на потоки.
-// Родительская корутина начала свою работу в потоке DefaultDispatcher-worker-1,
-// а завершила в потоке в DefaultDispatcher-worker-2, в котором дочерняя корутина выполнялась.
-// Это особенность работы suspend функций и диспетчеров.
+//20:46:38.889 parent coroutine, start [DefaultDispatcher-worker-1]
+//20:46:38.893 parent coroutine, wait until children complete [DefaultDispatcher-worker-1]
+//20:46:40.395 parent coroutine, end [DefaultDispatcher-worker-3]
+//Запускаем дочерние корутины, а потом для обеих вызываем join, тем самым дожидаясь окончания их работы.
+// Дочерние корутины отработают параллельно, поэтому общее время работы родительской корутины составит 1500.
 
 
     private fun onCancel(){
