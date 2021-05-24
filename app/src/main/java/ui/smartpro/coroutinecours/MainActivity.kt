@@ -8,6 +8,8 @@ import kotlinx.coroutines.*
 import ui.smartpro.coroutinecours.model.UserData
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
@@ -41,11 +43,10 @@ class MainActivity : AppCompatActivity() {
     }
 
 private fun onRun() {
-// Использует тот же пул потоков, что и диспетчер по умолчанию.
-// Но его лимит на потоки равен 64 (или числу ядер процессора, если их больше 64).
-//
-//Этот диспетчер подходит для выполнения IO операций (запросы в сеть, чтение с диска и т.п.).
-    val scope = CoroutineScope(Dispatchers.IO)
+
+    val scope = CoroutineScope(
+            Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+    )
 
     repeat(6) {
         scope.launch {
@@ -55,22 +56,25 @@ private fun onRun() {
         }
     }
 }
+//6 корутин придут к диспетчеру, у которого есть только один поток.
+//
 //Логи:
 //
-//19:59:49.503 coroutine 3, start [DefaultDispatcher-worker-4]
-//19:59:49.503 coroutine 2, start [DefaultDispatcher-worker-3]
-//19:59:49.503 coroutine 1, start [DefaultDispatcher-worker-1]
-//19:59:49.506 coroutine 4, start [DefaultDispatcher-worker-6]
-//19:59:49.503 coroutine 0, start [DefaultDispatcher-worker-2]
-//19:59:49.508 coroutine 5, start [DefaultDispatcher-worker-5]
-//19:59:49.608 coroutine 3, end [DefaultDispatcher-worker-4]
-//19:59:49.608 coroutine 0, end [DefaultDispatcher-worker-2]
-//19:59:49.609 coroutine 2, end [DefaultDispatcher-worker-3]
-//19:59:49.608 coroutine 4, end [DefaultDispatcher-worker-6]
-//19:59:49.610 coroutine 5, end [DefaultDispatcher-worker-5]
-//19:59:49.615 coroutine 1, end [DefaultDispatcher-worker-1]
+//20:26:39.502 coroutine 0, start [pool-1-thread-1]
+//20:26:39.604 coroutine 0, end [pool-1-thread-1]
+//20:26:39.605 coroutine 1, start [pool-1-thread-1]
+//20:26:39.706 coroutine 1, end [pool-1-thread-1]
+//20:26:39.707 coroutine 2, start [pool-1-thread-1]
+//20:26:39.808 coroutine 2, end [pool-1-thread-1]
+//20:26:39.808 coroutine 3, start [pool-1-thread-1]
+//20:26:39.911 coroutine 3, end [pool-1-thread-1]
+//20:26:39.911 coroutine 4, start [pool-1-thread-1]
+//20:26:40.013 coroutine 4, end [pool-1-thread-1]
+//20:26:40.013 coroutine 5, start [pool-1-thread-1]
+//20:26:40.114 coroutine 5, end [pool-1-thread-1]
 //
-//Все корутины работали одновременно и никому не пришлось ждать.
+//Корутинам пришлось выстраиваться в очередь и выполнятся последовательно.
+
 
 //простой метод, чтобы доставать из контекста и выводить в лог Job и диспетчер.
 // Это поможет нам наглядно понять, что происходит с контекстом
