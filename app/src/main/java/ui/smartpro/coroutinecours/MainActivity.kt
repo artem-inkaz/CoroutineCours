@@ -9,7 +9,9 @@ import ui.smartpro.coroutinecours.model.UserData
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.coroutineContext
 import kotlin.math.log
 
@@ -39,29 +41,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onRun() {
-//Кроме Job в context чаще всего хранится диспетчер, который задает поток корутины.
-        //Чтобы сформировать Context, который будет содержать в себе Job и диспетчер
-//    val context = Job() + Dispatchers.Default
-    //сформированный контекст может быть использован при создании scope
-//    val scope = CoroutineScope(context)
-    //Теперь контекст созданного scope будет содержать в себе указанные Job и диспетчер
-//    val scope2 = CoroutineScope(Job() + Dispatchers.Default)
-//        log("context = $context")
-//любой элемент, который можно поместить в context, сам по себе также является context-ом. Т.е. Job - это просто Context с одним элементом.
-//    val scope4 = CoroutineScope(Job())
-// Dispatchers.Default - это Context с одним элементом
-// scope поймет, что ему передают контекст с одним элементом - диспетчером
-//    val scope3 =    CoroutineScope(Dispatchers.Default)
- // ******************************************************************************
-// Теперь такой объект data class UserData можно помещать в контекст тем же способом, что и Job или диспетчер
-        val userData = UserData(1, "name1", 10)
-        val scope = CoroutineScope(Job() + Dispatchers.Default + userData)
+//проверим что Job не передается, а диспетчер по умолчанию используется,
+// если явно не указать диспетчер. А также познакомимся с пустым контекстом.
+        val scope = CoroutineScope(EmptyCoroutineContext)
+        log("scope, ${contextToString(scope.coroutineContext)}")
 
-//А достать его из контекста можно так:
-//      val userData = coroutineContext[UserData]
-//Например, чтобы сделать какие-либо данные доступными для всех корутин,
-    // включая вложенные, т.к. данные контекста передаются между корутинами.
+        scope.launch {
+            log("coroutine, ${contextToString(coroutineContext)}")
+        }
 }
+//scope, Job = JobImpl{Active}@b5c0c8d, Dispatcher = null
+//coroutine, Job = StandaloneCoroutine{Active}@7640e53, Dispatcher = DefaultDispatcher
+//
+//Смотрим на контекст скопа.
+//
+//Скоп не нашел Job в переданном ему пустом контексте, создал свой Job и поместил его в свой контекст.
+// Потому что в scope всегда должен быть Job. Он будет выступать родителем для создаваемых корутин.
+//
+//А вот диспетчера в scope может и не быть. Диспетчер отвечает за выбор потока для выполнения кода.
+// Но scope используется для старта корутин. Сам по себе он не выполняет никакой код.
+// Поэтому ему не нужен диспетчер. И т.к. мы никакой диспетчер ему не передавали,
+// то scope остается без диспетчера в своем контексте.
+
+
+//простой метод, чтобы доставать из контекста и выводить в лог Job и диспетчер.
+// Это поможет нам наглядно понять, что происходит с контекстом
+    private fun contextToString(context: CoroutineContext) : String =
+            "Job = ${context[Job]}, Dispatchers = ${context[ContinuationInterceptor]}"
+
 
 
     private suspend fun getData(): String{
