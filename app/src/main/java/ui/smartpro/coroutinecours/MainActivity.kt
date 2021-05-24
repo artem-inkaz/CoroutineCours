@@ -50,7 +50,7 @@ private fun onRun() {
     scope.launch {
         log("coroutine, level1, ${contextToString(coroutineContext)}")
 
-        launch {
+        launch(Dispatchers.Default) {
             log("coroutine, level2, ${contextToString(coroutineContext)}")
 
             launch {
@@ -62,11 +62,11 @@ private fun onRun() {
 //Логи:
 //
 //scope, Job = JobImpl{Active}@973e4a6, Dispatcher = Main
-//coroutine, level1, Job = StandaloneCoroutine{Active}@4e813a2, Dispatcher = Main
-//coroutine, level2, Job = StandaloneCoroutine{Active}@e17e833, Dispatcher = Main
-//coroutine, level3, Job = StandaloneCoroutine{Active}@35f97f0, Dispatcher = Main
+//coroutine, level1, Job = StandaloneCoroutine{Active}@8fcba94, Dispatcher = Main
+//coroutine, level2, Job = StandaloneCoroutine{Active}@6ecb93d, Dispatcher = DefaultDispatcher
+//coroutine, level3, Job = StandaloneCoroutine{Active}@569a532, Dispatcher = DefaultDispatcher
 //
-//Диспетчер Main передается по цепочке: от scope к level1, от level1 к level2, от level2 к level3.
+//В корутине level2 диспетчер меняется на DefaultDispatcher. И далее он уже будет передан в корутину level3.
 
 
 
