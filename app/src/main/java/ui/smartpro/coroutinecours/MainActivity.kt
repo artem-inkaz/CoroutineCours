@@ -39,23 +39,34 @@ class MainActivity : AppCompatActivity() {
             onCancel()
         }
     }
+//Вложенные корутины
+//Создадим в корутине еще одну корутину, а в ней еще одну.
+// Посмотрим, как будет передан диспетчер от родительских корутин к дочерним.
+private fun onRun() {
 
-    private fun onRun() {
-//проверим что Job не передается, а диспетчер по умолчанию используется,
-// если явно не указать диспетчер. А также познакомимся с пустым контекстом.
-        val scope = CoroutineScope(Dispatchers.Main)
-        log("scope, ${contextToString(scope.coroutineContext)}")
+    val scope = CoroutineScope(Job() + Dispatchers.Main)
+    log("scope, ${contextToString(scope.coroutineContext)}")
 
-        scope.launch {
-            log("coroutine, ${contextToString(coroutineContext)}")
+    scope.launch {
+        log("coroutine, level1, ${contextToString(coroutineContext)}")
+
+        launch {
+            log("coroutine, level2, ${contextToString(coroutineContext)}")
+
+            launch {
+                log("coroutine, level3, ${contextToString(coroutineContext)}")
+            }
         }
+    }
 }
-//scope, Job = JobImpl{Active}@7640e53, Dispatcher = Main
-//coroutine, Job = StandaloneCoroutine{Active}@309e489, Dispatcher = Main
+//Логи:
 //
-//В контексте scope есть Main диспетчер. И он же есть в контексте корутины, потому что был передан
-// из контекста скопа. Системе не пришлось помещать в корутину диспетчер по умолчанию, потому что
-// корутина получила диспетчер из скопа.
+//scope, Job = JobImpl{Active}@973e4a6, Dispatcher = Main
+//coroutine, level1, Job = StandaloneCoroutine{Active}@4e813a2, Dispatcher = Main
+//coroutine, level2, Job = StandaloneCoroutine{Active}@e17e833, Dispatcher = Main
+//coroutine, level3, Job = StandaloneCoroutine{Active}@35f97f0, Dispatcher = Main
+//
+//Диспетчер Main передается по цепочке: от scope к level1, от level1 к level2, от level2 к level3.
 
 
 
