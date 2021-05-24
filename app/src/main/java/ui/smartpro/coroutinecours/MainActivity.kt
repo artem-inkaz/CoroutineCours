@@ -39,45 +39,41 @@ class MainActivity : AppCompatActivity() {
             onCancel()
         }
     }
-//Вложенные корутины
-//Создадим в корутине еще одну корутину, а в ней еще одну.
-// Посмотрим, как будет передан диспетчер от родительских корутин к дочерним.
+
 private fun onRun() {
-    val userData = UserData(1, "name1", 10)
-    val scope = CoroutineScope(Job() + Dispatchers.Main + userData)
-    log("scope, ${contextToString(scope.coroutineContext)}")
+    val scope = CoroutineScope(Dispatchers.Default)
 
-    scope.launch {
-        log("coroutine, level1, ${contextToString(coroutineContext)}")
-
-        launch(Dispatchers.Default) {
-            val userData2 = coroutineContext[UserData]
-            log("coroutine, level2, ${contextToString(coroutineContext)}")
-            log("$userData2")
-            launch {
-                log("coroutine, level3, ${contextToString(coroutineContext)}")
-            }
+    repeat(6) {
+        scope.launch {
+            log("coroutine $it, start")
+            TimeUnit.MILLISECONDS.sleep(100)
+            log("coroutine $it, end")
         }
     }
 }
-//Логи:
+//Смотрим логи:
 //
-//scope, Job = JobImpl{Active}@973e4a6, Dispatcher = Main
-//coroutine, level1, Job = StandaloneCoroutine{Active}@8fcba94, Dispatcher = Main
-//coroutine, level2, Job = StandaloneCoroutine{Active}@6ecb93d, Dispatcher = DefaultDispatcher [DefaultDispatcher-worker-2]
-//UserData(id=1, name=name1, age=10) [DefaultDispatcher-worker-2]
-//coroutine, level3, Job = StandaloneCoroutine{Active}@569a532, Dispatcher = DefaultDispatcher [DefaultDispatcher-worker-2]
+//19:56:52.658 coroutine 0, start [DefaultDispatcher-worker-1]
+//19:56:52.658 coroutine 2, start [DefaultDispatcher-worker-3]
+//19:56:52.658 coroutine 3, start [DefaultDispatcher-worker-4]
+//19:56:52.658 coroutine 1, start [DefaultDispatcher-worker-2]
+//19:56:52.761 coroutine 0, end [DefaultDispatcher-worker-1]
+//19:56:52.761 coroutine 3, end [DefaultDispatcher-worker-4]
+//19:56:52.761 coroutine 2, end [DefaultDispatcher-worker-3]
+//19:56:52.761 coroutine 1, end [DefaultDispatcher-worker-2]
+//19:56:52.763 coroutine 4, start [DefaultDispatcher-worker-4]
+//19:56:52.763 coroutine 5, start [DefaultDispatcher-worker-3]
+//19:56:52.865 coroutine 5, end [DefaultDispatcher-worker-3]
+//19:56:52.865 coroutine 4, end [DefaultDispatcher-worker-4]
 //
-//В корутине level2 диспетчер меняется на DefaultDispatcher. И далее он уже будет передан в корутину level3.
-
-
+// Корутины 0,2,3 и 1 начали работу.
+// Диспетчер выдал им потоки DefaultDispatcher-worker 1, 3, 4 и 2.
+// На этом свободные потоки закончились, и корутинам 5 и 4 пришлось ждать, пока потоки освободятся.
 
 //простой метод, чтобы доставать из контекста и выводить в лог Job и диспетчер.
 // Это поможет нам наглядно понять, что происходит с контекстом
     private fun contextToString(context: CoroutineContext) : String =
             "Job = ${context[Job]}, Dispatchers = ${context[ContinuationInterceptor]}"
-
-
 
     private suspend fun getData(): String{
         delay(1000)
