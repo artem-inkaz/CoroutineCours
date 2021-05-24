@@ -39,15 +39,13 @@ class MainActivity : AppCompatActivity() {
 //Кроме Job в context чаще всего хранится диспетчер, который задает поток корутины.
         //Чтобы сформировать Context, который будет содержать в себе Job и диспетчер
     val context = Job() + Dispatchers.Default
+    //сформированный контекст может быть использован при создании scope
+    val scope = CoroutineScope(context)
+    //Теперь контекст созданного scope будет содержать в себе указанные Job и диспетчер
+    val scope2 = CoroutineScope(Job() + Dispatchers.Default)
         log("context = $context")
 }
-//Это выражение создаст Context и поместит туда указанные элементы
-//
-//Лог покажет содержимое контекста:
-//
-//context = [JobImpl{Active}@42b0573, DefaultDispatcher]
-//
-//В контексте лежат реализация джоба и диспетчер.
+
 
     private suspend fun getData(): String{
         delay(1000)
