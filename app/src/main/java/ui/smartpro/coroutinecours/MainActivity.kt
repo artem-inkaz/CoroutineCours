@@ -44,6 +44,12 @@ class MainActivity : AppCompatActivity() {
     //Теперь контекст созданного scope будет содержать в себе указанные Job и диспетчер
     val scope2 = CoroutineScope(Job() + Dispatchers.Default)
         log("context = $context")
+//любой элемент, который можно поместить в context, сам по себе также является context-ом. Т.е. Job - это просто Context с одним элементом.
+    val scope4 = CoroutineScope(Job())
+// Dispatchers.Default - это Context с одним элементом
+// scope поймет, что ему передают контекст с одним элементом - диспетчером
+    val scope3 =    CoroutineScope(Dispatchers.Default)
+
 }
 
 
