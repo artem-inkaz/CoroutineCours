@@ -34,49 +34,42 @@ class MainActivity : AppCompatActivity() {
             onCancel()
         }
     }
-//В методе onRun стартуем корутину, а внутри нее еще одну корутину.
+//В корутине запускаем две suspend функции: getData и getData2.
+// Первая имитирует выполнение работы в течение 1000 мс и возвращает строку “data”,
+// а вторая - в течение 1500 мс и возвращает строку “data2”.
     private fun onRun() {
 
     scope.launch {
         log("parent coroutine, start")
-//создаем и стартуем дочернюю корутину. Билдер возвращает нам Deferred объект
-        val deferred = async() {
-            log("child coroutine, start")
-            TimeUnit.MILLISECONDS.sleep(1000)
-            "async result"
-        }
-        log("parent coroutine, wait until child returns result")
-// метод await приостановит выполнение родительской корутины, пока не выполнится дочерняя,
-// и вернет результат дочерней корутины.
-// Дочерняя корутина имитирует работу в течение одной секунды, а затем возвращает строку "async result".
-        val result = deferred.await()
-        log("parent coroutine, child returns: $result")
+        val data = getData()
+        val data2 = getData2()
+        val result = "${data}, ${data2}"
+        log("parent coroutine, children returned: $result")
         log("parent coroutine, end")
     }
 }
-//parent coroutine, start [DefaultDispatcher-worker-1]
-//parent coroutine, wait until child returns result [DefaultDispatcher-worker-1]
-//child coroutine, start [DefaultDispatcher-worker-2]
-//child coroutine, end [DefaultDispatcher-worker-2]
-//parent coroutine, child returns: async result [DefaultDispatcher-worker-2]
-//parent coroutine, end [DefaultDispatcher-worker-2]
+//11:06:35.026 parent coroutine, start [DefaultDispatcher-worker-1]
+//11:06:37.543 parent coroutine, children returned: data, data2 [DefaultDispatcher-worker-1]
+//11:06:37.546 parent coroutine, end [DefaultDispatcher-worker-1]
 //
-//Все аналогично примеру с launch+join. Билдер async создает и запускает дочернюю корутину.
-// Родительская корутина продолжает выполняться и останавливается на методе await.
-// Теперь она в ожидании завершения дочерней корутины.
-//
-//Дочерняя корутина выполняется в отдельном потоке.
-// По ее завершению метод await возвращает результат ее работы (строка “async result”), и
-// возобновляет выполнение кода родительской корутины.
+//По времени в логах видно, что общее время выполнения корутины составило около 2500 мсек.
+// Это верно, т.к. suspend функции были вызваны последовательно одна за другой.
 
+    private suspend fun getData(): String{
+        delay(1000)
+        return "data"
+    }
+
+    private suspend fun getData2(): String {
+        delay(1500)
+        return "data2"
+    }
 
     private fun onRun2(){
         log("onRun2, start")
         job.start()
         log("onRun2, end")
     }
-
-
 
     private fun onCancel(){
         log("onCancel")
