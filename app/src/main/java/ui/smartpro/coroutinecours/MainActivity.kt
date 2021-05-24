@@ -41,11 +41,11 @@ class MainActivity : AppCompatActivity() {
     }
 
 private fun onRun() {
-//Если корутина не находит в своем контексте диспетчер, то она использует диспетчер по умолчанию.
-// Этот диспетчер представляет собой пул потоков. Количество потоков равно количеству ядер процессора.
+// Использует тот же пул потоков, что и диспетчер по умолчанию.
+// Но его лимит на потоки равен 64 (или числу ядер процессора, если их больше 64).
 //
-//Он не подходит для IO операций, но сгодится для интенсивных вычислений.
-    val scope = CoroutineScope(Dispatchers.Default)
+//Этот диспетчер подходит для выполнения IO операций (запросы в сеть, чтение с диска и т.п.).
+    val scope = CoroutineScope(Dispatchers.IO)
 
     repeat(6) {
         scope.launch {
@@ -55,24 +55,22 @@ private fun onRun() {
         }
     }
 }
-//Смотрим логи:
+//Логи:
 //
-//19:56:52.658 coroutine 0, start [DefaultDispatcher-worker-1]
-//19:56:52.658 coroutine 2, start [DefaultDispatcher-worker-3]
-//19:56:52.658 coroutine 3, start [DefaultDispatcher-worker-4]
-//19:56:52.658 coroutine 1, start [DefaultDispatcher-worker-2]
-//19:56:52.761 coroutine 0, end [DefaultDispatcher-worker-1]
-//19:56:52.761 coroutine 3, end [DefaultDispatcher-worker-4]
-//19:56:52.761 coroutine 2, end [DefaultDispatcher-worker-3]
-//19:56:52.761 coroutine 1, end [DefaultDispatcher-worker-2]
-//19:56:52.763 coroutine 4, start [DefaultDispatcher-worker-4]
-//19:56:52.763 coroutine 5, start [DefaultDispatcher-worker-3]
-//19:56:52.865 coroutine 5, end [DefaultDispatcher-worker-3]
-//19:56:52.865 coroutine 4, end [DefaultDispatcher-worker-4]
+//19:59:49.503 coroutine 3, start [DefaultDispatcher-worker-4]
+//19:59:49.503 coroutine 2, start [DefaultDispatcher-worker-3]
+//19:59:49.503 coroutine 1, start [DefaultDispatcher-worker-1]
+//19:59:49.506 coroutine 4, start [DefaultDispatcher-worker-6]
+//19:59:49.503 coroutine 0, start [DefaultDispatcher-worker-2]
+//19:59:49.508 coroutine 5, start [DefaultDispatcher-worker-5]
+//19:59:49.608 coroutine 3, end [DefaultDispatcher-worker-4]
+//19:59:49.608 coroutine 0, end [DefaultDispatcher-worker-2]
+//19:59:49.609 coroutine 2, end [DefaultDispatcher-worker-3]
+//19:59:49.608 coroutine 4, end [DefaultDispatcher-worker-6]
+//19:59:49.610 coroutine 5, end [DefaultDispatcher-worker-5]
+//19:59:49.615 coroutine 1, end [DefaultDispatcher-worker-1]
 //
-// Корутины 0,2,3 и 1 начали работу.
-// Диспетчер выдал им потоки DefaultDispatcher-worker 1, 3, 4 и 2.
-// На этом свободные потоки закончились, и корутинам 5 и 4 пришлось ждать, пока потоки освободятся.
+//Все корутины работали одновременно и никому не пришлось ждать.
 
 //простой метод, чтобы доставать из контекста и выводить в лог Job и диспетчер.
 // Это поможет нам наглядно понять, что происходит с контекстом
