@@ -34,39 +34,20 @@ class MainActivity : AppCompatActivity() {
             onCancel()
         }
     }
-//С помощью async мы можем вызвать эти функции параллельно, чтобы сократить общее время их выполнения.
-// Помещаем вызов каждой suspend функции в отдельную async корутину.
-// И методом await получаем результат.
-    private fun onRun() {
 
-    scope.launch {
-        log("parent coroutine, start")
-        val data = async { getData()}
-        val data2 = async { getData2()}
-        log("parent coroutine, wait until children return result")
-        val result = "${data.await()}, ${data2.await()}"
-        log("parent coroutine, children returned: $result")
-        log("parent coroutine, end")
-    }
+    private fun onRun() {
+//Кроме Job в context чаще всего хранится диспетчер, который задает поток корутины.
+        //Чтобы сформировать Context, который будет содержать в себе Job и диспетчер
+    val context = Job() + Dispatchers.Default
+        log("context = $context")
 }
-//Логи:
+//Это выражение создаст Context и поместит туда указанные элементы
 //
-//11:00:52.751 parent coroutine, start [DefaultDispatcher-worker-1]
-//11:00:52.758 parent coroutine, wait until children return result [DefaultDispatcher-worker-1]
-//11:00:54.268 parent coroutine, children returned: data, data2 [DefaultDispatcher-worker-3]
-//11:00:54.269 parent coroutine, end [DefaultDispatcher-worker-3]
+//Лог покажет содержимое контекста:
 //
-//Теперь логи показывают, что общее время выполнения родительской корутины составило около 1500 мсек.
-// Наши suspend функции выполнялись параллельно в разных async корутинах,
-// а родительская корутина дождалась выполнения обеих и получила результаты выполнения.
+//context = [JobImpl{Active}@42b0573, DefaultDispatcher]
 //
-//А теперь снова представьте, что родительская корутина выполняется в main потоке.
-// А suspend-функции - это получение данных с сервера с помощью, например, Retrofit.
-// Вы выполняете запросы в фоновых потоках, получаете данные в main потоке и
-// отображаете их не в логе, а на экране. И никаких колбэков.
-// В этом и есть одна из основных возможностей корутин - лаконичный асинхронный код.
-//Lazy
-//async корутину также можно запускать в режиме Lazy. Метод await стартует ее выполнение.
+//В контексте лежат реализация джоба и диспетчер.
 
     private suspend fun getData(): String{
         delay(1000)
