@@ -43,16 +43,17 @@ class MainActivity : AppCompatActivity() {
 //Создадим в корутине еще одну корутину, а в ней еще одну.
 // Посмотрим, как будет передан диспетчер от родительских корутин к дочерним.
 private fun onRun() {
-
-    val scope = CoroutineScope(Job() + Dispatchers.Main)
+    val userData = UserData(1, "name1", 10)
+    val scope = CoroutineScope(Job() + Dispatchers.Main + userData)
     log("scope, ${contextToString(scope.coroutineContext)}")
 
     scope.launch {
         log("coroutine, level1, ${contextToString(coroutineContext)}")
 
         launch(Dispatchers.Default) {
+            val userData2 = coroutineContext[UserData]
             log("coroutine, level2, ${contextToString(coroutineContext)}")
-
+            log("$userData2")
             launch {
                 log("coroutine, level3, ${contextToString(coroutineContext)}")
             }
@@ -63,8 +64,9 @@ private fun onRun() {
 //
 //scope, Job = JobImpl{Active}@973e4a6, Dispatcher = Main
 //coroutine, level1, Job = StandaloneCoroutine{Active}@8fcba94, Dispatcher = Main
-//coroutine, level2, Job = StandaloneCoroutine{Active}@6ecb93d, Dispatcher = DefaultDispatcher
-//coroutine, level3, Job = StandaloneCoroutine{Active}@569a532, Dispatcher = DefaultDispatcher
+//coroutine, level2, Job = StandaloneCoroutine{Active}@6ecb93d, Dispatcher = DefaultDispatcher [DefaultDispatcher-worker-2]
+//UserData(id=1, name=name1, age=10) [DefaultDispatcher-worker-2]
+//coroutine, level3, Job = StandaloneCoroutine{Active}@569a532, Dispatcher = DefaultDispatcher [DefaultDispatcher-worker-2]
 //
 //В корутине level2 диспетчер меняется на DefaultDispatcher. И далее он уже будет передан в корутину level3.
 
