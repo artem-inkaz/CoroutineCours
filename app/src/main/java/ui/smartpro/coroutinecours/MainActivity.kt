@@ -19,7 +19,7 @@ class MainActivity : AppCompatActivity() {
     //указываем время
     private var formatter = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
 
-    private val scope = CoroutineScope(Dispatchers.Main)
+    private val scope = CoroutineScope(Dispatchers.Default)
 
     private var job: Job? = null
 
@@ -41,16 +41,54 @@ class MainActivity : AppCompatActivity() {
     }
 
 private fun onRun() {
-
-        if (job?.isActive == true) return
-        job = scope.launch {
+ //   val scope = CoroutineScope(Dispatchers.Default)
+         scope.launch {
             log("start coroutine")
             val data = getData()
             log("end coroutine")
-            updateUI(data)
+             // работает в Dispatchers.Main
+//            updateUI(data)
 
         }
 }
+//Логи:
+//
+//start coroutine [DefaultDispatcher-worker-1]
+//suspend function, start [DefaultDispatcher-worker-1]
+//suspend function, background work [Thread-5]
+//end coroutine [DefaultDispatcher-worker-3]
+//
+//Билдер создает dispatchedContinuation и вызывает его метод resume.
+// Диспетчер находит свободный поток (DefaultDispatcher-worker-1) и отправляет туда Continuation на выполнение.
+// Код Continuation выполняется и вызывает suspend функцию.
+// При вызове suspend функции никакой диспетчер не используется. Идет обычный вызов метода.
+// По логам (suspend function, start) мы видим, что suspend функция была вызвана в потоке корутины.
+// На этом завершилось выполнение первой части Continuation.
+//
+//Далее suspend функция создает отдельный поток (Thread-5) и уходит туда,
+// чтобы выполнить свою фоновую работу и не блокировать поток корутины (DefaultDispatcher-worker-1).
+// По завершению этой работы, она вызывает dispatchedContinuation.resume, чтобы возобновить выполнение корутины.
+// Диспетчер находит свободный поток (DefaultDispatcher-worker-3) и отправляет туда Continuation на продолжение выполнения.
+// Continuation в этом потоке выполняет код из следующей ветки switch.
+
+// Резюмируя все вышесказанное, получается такая схема.
+//
+//Первый вызов Continuation был выполнен билдером. Диспетчер отправил его в поток DefaultDispatcher-worker-1.
+// В этом потоке выполнилась первая часть кода и произошел запуск suspend функции.
+//
+//log("start coroutine")
+//val data = getData()
+//Suspend функция по окончанию работы выполнила второй вызов Continuation.
+// Диспетчер отправил его в поток DefaultDispatcher-worker-3.
+// В этом потоке выполнилась оставшаяся часть кода.
+//
+//log("end coroutine")
+//В итоге получилось так, что поток начала работы корутины не совпадает с потоком окончания.
+// Это выглядит крайне необычно и запутанно, если не знать, что именно происходит под капотом.
+// Но вы теперь знаете, что suspend функция может сменить поток вашей корутины.
+// И не забывайте, что функции join() и await(), которые мы проходили в уроке про билдеры,
+// это тоже suspend функции. А также функция delay.
+
 
 //простой метод, чтобы доставать из контекста и выводить в лог Job и диспетчер.
 // Это поможет нам наглядно понять, что происходит с контекстом
@@ -71,7 +109,6 @@ private fun onRun() {
                 it.resume("Data!")
             }
         }
-
 
     private suspend fun getData2(): String {
         delay(1500)
