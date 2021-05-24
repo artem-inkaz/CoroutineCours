@@ -5,9 +5,12 @@ import android.os.Bundle
 import android.util.Log
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
+import ui.smartpro.coroutinecours.model.UserData
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 import kotlin.math.log
 
 class MainActivity : AppCompatActivity() {
@@ -38,18 +41,26 @@ class MainActivity : AppCompatActivity() {
     private fun onRun() {
 //Кроме Job в context чаще всего хранится диспетчер, который задает поток корутины.
         //Чтобы сформировать Context, который будет содержать в себе Job и диспетчер
-    val context = Job() + Dispatchers.Default
+//    val context = Job() + Dispatchers.Default
     //сформированный контекст может быть использован при создании scope
-    val scope = CoroutineScope(context)
+//    val scope = CoroutineScope(context)
     //Теперь контекст созданного scope будет содержать в себе указанные Job и диспетчер
-    val scope2 = CoroutineScope(Job() + Dispatchers.Default)
-        log("context = $context")
+//    val scope2 = CoroutineScope(Job() + Dispatchers.Default)
+//        log("context = $context")
 //любой элемент, который можно поместить в context, сам по себе также является context-ом. Т.е. Job - это просто Context с одним элементом.
-    val scope4 = CoroutineScope(Job())
+//    val scope4 = CoroutineScope(Job())
 // Dispatchers.Default - это Context с одним элементом
 // scope поймет, что ему передают контекст с одним элементом - диспетчером
-    val scope3 =    CoroutineScope(Dispatchers.Default)
+//    val scope3 =    CoroutineScope(Dispatchers.Default)
+ // ******************************************************************************
+// Теперь такой объект data class UserData можно помещать в контекст тем же способом, что и Job или диспетчер
+        val userData = UserData(1, "name1", 10)
+        val scope = CoroutineScope(Job() + Dispatchers.Default + userData)
 
+//А достать его из контекста можно так:
+//      val userData = coroutineContext[UserData]
+//Например, чтобы сделать какие-либо данные доступными для всех корутин,
+    // включая вложенные, т.к. данные контекста передаются между корутинами.
 }
 
 
