@@ -42,22 +42,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onRun() {
-        log("onRun start")
 
-        scope.launch {
-            try {
-                Integer.parseInt("a")
-            } catch (e: Exception) {
-                log("error $e")
-            }
+        val handler = CoroutineExceptionHandler { context, exception ->
+            log("handled $exception")
         }
-    log("onRun end")
+
+        scope.launch(handler) {
+            Integer.parseInt("a")
+        }
 }
-//Первый способ - самый очевидный и простой: поместить в try-catch код, который выбрасывает ошибку.
-// В этом случае все работает, как и должно.
-//Корутина успешно выполнит свой код и завершится. Крэша не будет. А в логах мы увидим:
+
+//Создаем обработчик CoroutineExceptionHandler, который просто пишет в лог ошибку,
+// и передаем его в билдер корутины, чтобы он попал в ее контекст.
 //
-//exception java.lang.NumberFormatException: For input string: "a"
+//
+//
+//Выполнив этот код мы в логах увидим,
+// что исключение было обработано нашим объектом CoroutineExceptionHandler:
+//
+//handled java.lang.NumberFormatException: For input string: "a"
+//
+//Корутина отправила исключение в наш обработчик, вместо глобального, и, тем самым, мы избежали крэша.
+
 
 
 //простой метод, чтобы доставать из контекста и выводить в лог Job и диспетчер.
