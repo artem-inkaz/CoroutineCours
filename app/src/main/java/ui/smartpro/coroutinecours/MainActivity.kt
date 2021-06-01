@@ -42,27 +42,52 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onRun() {
-
         val handler = CoroutineExceptionHandler { context, exception ->
             log("handled $exception")
         }
 
         scope.launch(handler) {
+            TimeUnit.MILLISECONDS.sleep(1000)
             Integer.parseInt("a")
+        }
+
+        scope.launch {
+            repeat(5) {
+                TimeUnit.MILLISECONDS.sleep(300)
+                log("second coroutine isActive ${isActive}")
+            }
         }
 }
 
-//Создаем обработчик CoroutineExceptionHandler, который просто пишет в лог ошибку,
-// и передаем его в билдер корутины, чтобы он попал в ее контекст.
+//Запускаем две корутины в одном scope. Первая корутина вызовет исключение через 1000 мсек.
+// Вторая корутина 5 раз с интервалом в 300 мсек выводит в лог свой статус.
+//
+//Лог:
+//
+//15:36:34.043 second coroutine isActive true
+//15:36:34.344 second coroutine isActive true
+//15:36:34.646 second coroutine isActive true
+//15:36:34.745 first coroutine exception java.lang.NumberFormatException: For input string: "a"
+//15:36:34.947 second coroutine isActive false
+//15:36:35.248 second coroutine isActive false
+//
+//Поначалу вторая корутина сообщает о том, что полет нормальный и все ок.
+// Далее в первой корутине происходит исключение и уходит в обработчик, который пишет об этом в лог.
+// А scope, узнав, что в первой корутине произошла ошибка, отменяет вторую.
+// Это видно по ее статусу в логе.
 //
 //
+//Это может быть удобным, если вам при возникновении ошибки в одной операции,
+// надо отменить другие операции.
+// Вы просто помещаете корутины с этими операциями в один scope.
 //
-//Выполнив этот код мы в логах увидим,
-// что исключение было обработано нашим объектом CoroutineExceptionHandler:
 //
-//handled java.lang.NumberFormatException: For input string: "a"
-//
-//Корутина отправила исключение в наш обработчик, вместо глобального, и, тем самым, мы избежали крэша.
+//Учитывайте, что scope отменяет не только корутины, но и себя. А это означает,
+// что в этом scope мы больше не сможем запустить корутины.
+
+
+
+
 
 
 
