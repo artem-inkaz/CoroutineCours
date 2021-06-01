@@ -19,7 +19,7 @@ class MainActivity : AppCompatActivity() {
     //указываем время
     private var formatter = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
 
-//   private val scope = CoroutineScope(Dispatchers.Unconfined)
+   private val scope = CoroutineScope(Job()+Dispatchers.Default)
 
     private var job: Job? = null
 
@@ -41,57 +41,12 @@ class MainActivity : AppCompatActivity() {
     }
 
 private fun onRun() {
-   val scope = CoroutineScope(Dispatchers.Default)
-        val job =  scope.launch {
-            log("parent start")
-            launch {
-                log("child start")
-                delay(1000)
-                log("child end")
-            }
-            log("parent end")
-        }
+    // стартует простая корутина, в которой происходит ошибка
     scope.launch {
-        delay(500)
-        log("parent job is active: ${job.isActive}")
-        delay(1000)
-        log("parent job is active: ${job.isActive}")
+        Integer.parseInt("a")
     }
 }
-
-//Будем запускать отдельную корутину, которая в лог пишет статус джоба родительской корутины.
-// Первый раз мы пишем лог, когда родительская корутина уже выполнила свой код,
-// но ее дочерняя корутина еще работает. А второй лог запишется уже после того,
-// как дочерняя завершила работу.
-//
-//Логи:
-//
-//22:03:03.820 parent start
-//22:03:03.822 parent end
-//22:03:03.823 child start
-//22:03:04.327 parent job is active: true
-//22:03:04.832 child end
-//22:03:05.334 parent job is active: false
-//
-//Родительская корутина выполнила весь свой код и начала выполняться дочерняя.
-// Проверяем статус родительской корутины - она все еще активна, хотя код ее завершен.
-// Далее дочерняя корутина завершает работу и мы еще раз проверяем статус родительской корутины -
-// теперь она завершена.
-//
-//Т.е. чтобы родительская корутина считалась завершенной, ей недостаточно просто выполнить весь свой код.
-// Необходимо также, чтобы завершились все ее дочерние корутины.
-//
-//
-//Каков практический смысл этого статуса? Где это используется?
-//
-//Например - при отмене корутин. Вызов метода cancel для родительской корутины каскадно отменит
-// и все ее дочерние корутины. Но метод cancel сработает только для корутины, которая еще не завершена.
-// Поэтому родительская корутина и ждет завершения дочерних,
-// чтобы мы всегда могли отменить дочерние с помощью родительской.
-//
-//Еще один пример - метод join. В уроке про launch мы разбирали этот метод. Он будет ждать,
-// чтобы корутина была именно завершена, а не просто выполнила свой код.
-// Соответственно, если у ожидаемой корутины есть дочерние, то он будет ждать пока они не завершатся.
+// Будет ошибка
 
 
 
@@ -141,7 +96,7 @@ private fun onRun() {
     override fun onDestroy() {
         super.onDestroy()
         log("onDestroy")
-//        scope.cancel()
+        scope.cancel()
     }
 
     private fun log(text: String) {
