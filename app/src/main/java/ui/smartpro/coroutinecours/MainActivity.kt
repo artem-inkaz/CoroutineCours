@@ -47,6 +47,17 @@ class MainActivity : AppCompatActivity() {
             log("handled $exception")
         }
 
+ //Не забывайте, что контекст корутин формируется не только из того, что было передано в билдер,
+        // но и того, что пришло из контекста родителя.
+        // Поэтому, если вам надо поместить ваш CoroutineExceptionHandler обработчик во все корутины,
+        // то просто поместите его в scope, и он будет передан во все корутины, созданные в нем.
+        //
+        //val handler = CoroutineExceptionHandler { context, exception ->
+        //   log("coroutine exception $exception")
+        //}
+        //
+        //val scope = CoroutineScope(Job() + Dispatchers.Default + handler)
+
         scope.launch(handler) {
             TimeUnit.MILLISECONDS.sleep(1000)
             Integer.parseInt("a")
