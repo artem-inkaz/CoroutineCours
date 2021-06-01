@@ -41,43 +41,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-private fun onRun() {
-    log("onRun start")
-    try {
-        thread {
-            Integer.parseInt("a")
-        }
-    } catch (e:Exception) {
-        log("error $e")
-    }
+    private fun onRun() {
+        log("onRun start")
 
+        scope.launch {
+            try {
+                Integer.parseInt("a")
+            } catch (e: Exception) {
+                log("error $e")
+            }
+        }
     log("onRun end")
 }
-//Вместо корутины мы просто создаем новый поток. И в нем выполняем код, который выбросит исключение.
-// Корутина работает именно по этому принципу, если рассматривать ее упрощенно.
+//Первый способ - самый очевидный и простой: поместить в try-catch код, который выбрасывает ошибку.
+// В этом случае все работает, как и должно.
+//Корутина успешно выполнит свой код и завершится. Крэша не будет. А в логах мы увидим:
 //
-//
-//
-//Смотрим лог:
-//
-//onRun start
-//onRun end
-//E/AndroidRuntime: FATAL EXCEPTION: Thread-2
-//  Process: com.startandroid.coroutinescourse, PID: 6881
-//  java.lang.NumberFormatException: For input string: "a"
-//    at java.lang.Integer.parseInt(Integer.java:615)
-//    at java.lang.Integer.parseInt(Integer.java:650)
-//    at com.startandroid.coroutinescourse.MainActivity$onRun$1.invoke(MainActivity.kt:59)
-//    at com.startandroid.coroutinescourse.MainActivity$onRun$1.invoke(MainActivity.kt:21)
-//    at kotlin.concurrent.ThreadsKt$thread$thread$1.run(Thread.kt:30)
-//
-//Похоже на предыдущий случай. Система выполнила у потока метод run.
-// А тот выполнил код внутри блока thread, получил исключение и крэшнул приложение.
-//
-//А наш try-catch снова не у дел. Потому что он покрывал создание и запуск нового потока,
-// но не выполнение кода в нем.
-
-
+//exception java.lang.NumberFormatException: For input string: "a"
 
 
 //простой метод, чтобы доставать из контекста и выводить в лог Job и диспетчер.
