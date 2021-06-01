@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
 //
 //Но что если для нас корутины 1_1 и 1_2 не критичны, и при их ошибках нам не надо отменять все вокруг.
 // Для этого мы можем поместить их в coroutineScope
+            // try catch
             coroutineScope {
                 launch(CoroutineName("1_1")) {
                     // ...
@@ -96,7 +97,32 @@ class MainActivity : AppCompatActivity() {
 // И suspend функция выбросит эту ошибку в наш код в месте своего вызова.
 // И если не поймать ее там, то мы получим стандартное поведение при ошибке в корутине 1.
 // И в результате все поотменяется
-
+//Чтобы этого не произошло, обернем coroutineScope в try-catch
+//    scope.launch(CoroutineName("1")) {
+//
+//        try {
+//            coroutineScope {
+//                launch(CoroutineName("1_1")) {
+//                    // ...
+//                }
+//
+//                launch(CoroutineName("1_2")) {
+//                    // exception
+//                }
+//            }
+//        } catch (e: Exception) {
+//            // ...
+//        }
+//
+//        launch(CoroutineName("1_3")) {
+//            // ...
+//        }
+//
+//        launch(CoroutineName("1_4")) {
+//            // ...
+//        }
+//
+//    }
 
 
 
