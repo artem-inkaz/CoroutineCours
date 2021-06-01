@@ -94,11 +94,11 @@ class MainActivity : AppCompatActivity() {
 
 //                val result = getFromCache()
 
-                if (result != null) {
-                    continuation.resume(result)
-                } else {
+//                if (result != null) {
+//                    continuation.resume(result)
+//                } else {
                     // async code
-                }
+ //               }
 
             }
 
