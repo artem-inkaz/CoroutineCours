@@ -49,14 +49,7 @@ class MainActivity : AppCompatActivity() {
 //Канал с размером буфера = 64 по умолчанию. Это значение можно поменять в JVM
             val channel = Channel<Int>(2)
             launch {
-                repeat(7) {
-                delay(300)
-                log("send $it")
-                channel.send(it)
-            }
-                log("close")
-
-//Отмена корутины
+                //Отмена корутины
 //Что будет, если отменить корутину-отправителя? Если метод send работает в suspend режиме
 // (т.е. ему приходится ждать получателя), то отправка данных в канал будет отменена,
 // а корутина завершится. Т.е. происходит стандартная реакция отменяемой suspend функции.
@@ -73,7 +66,12 @@ class MainActivity : AppCompatActivity() {
                 coroutineContext[Job]?.invokeOnCompletion {
                     channel.close()
                 }
-
+                repeat(7) {
+                delay(300)
+                log("send $it")
+                channel.send(it)
+            }
+                log("close")
             }
 
             launch {
