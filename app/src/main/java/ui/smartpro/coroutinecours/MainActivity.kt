@@ -68,21 +68,26 @@ class MainActivity : AppCompatActivity() {
         scope.launch(CoroutineName("1")) {
 
             launch(CoroutineName("1_1")) {
-            TimeUnit.MILLISECONDS.sleep(500)
+            TimeUnit.MILLISECONDS.sleep(1000)
+                log("exception")
             Integer.parseInt("a")
         }
             launch(CoroutineName("1_2")) {
-                TimeUnit.MILLISECONDS.sleep(1000)
+               repeatIsActive()
             }
+
+            repeatIsActive()
         }
 
         scope.launch(CoroutineName("2")) {
             launch(CoroutineName("2_1")) {
-                TimeUnit.MILLISECONDS.sleep(1000)
+                repeatIsActive()
             }
             launch(CoroutineName("2_2")) {
-                TimeUnit.MILLISECONDS.sleep(1000)
+                repeatIsActive()
             }
+
+            repeatIsActive()
         }
 }
 
@@ -127,14 +132,58 @@ class MainActivity : AppCompatActivity() {
 // ошибку родительской корутине и сами ничего с ней делают.
 
 //*************************************************************************************************
-//Запускаем код, смотрим лог:
+//Запускаем, смотрим лог:
+//19:08:47.961 Coroutine_2 isActive true
+//19:08:47.961 Coroutine_1 isActive true
+//19:08:47.964 Coroutine_1_2 isActive true
+//19:08:47.964 Coroutine_2_1 isActive true
+//19:08:47.968 Coroutine_2_2 isActive true
 //
-//java.lang.NumberFormatException: For input string: "a" was handled in Coroutine_1
+//19:08:48.264 Coroutine_2 isActive true
+//19:08:48.264 Coroutine_1 isActive true
+//19:08:48.264 Coroutine_1_2 isActive true
+//19:08:48.265 Coroutine_2_1 isActive true
+//19:08:48.270 Coroutine_2_2 isActive true
 //
-//Ошибка была обработана в корутине 1. Все в соответствии с алгоритмом.
-// Корутина 1_1, в которой произошла ошибка, сама не стала его обрабатывать, а передала родителю -
-// корутине 1. А тот не смог передать ошибку дальше своему родителю,
-// потому что это scope, и отправил ее в свой обработчик.
+//19:08:48.566 Coroutine_1 isActive true
+//19:08:48.566 Coroutine_2_1 isActive true
+//19:08:48.566 Coroutine_1_2 isActive true
+//19:08:48.566 Coroutine_2 isActive true
+//19:08:48.572 Coroutine_2_2 isActive true
+//
+//19:08:48.663 exception
+//
+//19:08:48.869 Coroutine_1 isActive false
+//19:08:48.869 Coroutine_2 isActive false
+//19:08:48.869 Coroutine_2_1 isActive false
+//19:08:48.869 Coroutine_1_2 isActive false
+//19:08:48.874 Coroutine_2_2 isActive false
+//
+//19:08:49.172 Coroutine_1 isActive false
+//19:08:49.172 Coroutine_2_1 isActive false
+//19:08:49.175 Coroutine_1_2 isActive false
+//19:08:49.175 java.lang.NumberFormatException: For input string: "a" handled in Coroutine_1
+//19:08:49.184 Coroutine_2_2 isActive false
+//19:08:49.172 Coroutine_2 isActive false
+//
+//
+//Поначалу все корутины активны. Но после того, как в корутине 1_1 была вызвана ошибка,
+// все остальные корутины этого scope были отменены.
+//
+//Т.е. ошибка поднимается наверх до scope, отменяя все, что можно.
+// И далее распространяется на остальные корутины этого scope,
+// каскадно отменяя в них все дочерние корутины.
+
+
+
+//Расширение для CoroutineScope. Мы сможем запускать его прямо в корутине.
+// Оно будет периодически выводить в лог имя и isActive статус корутины
+   fun CoroutineScope.repeatIsActive() {
+       repeat(5) {
+           TimeUnit.MILLISECONDS.sleep(300)
+           log("Coroutine_${coroutineContext[CoroutineName]?.name} isActive $isActive")
+       }
+   }
 
 
 //простой метод, чтобы доставать из контекста и выводить в лог Job и диспетчер.
