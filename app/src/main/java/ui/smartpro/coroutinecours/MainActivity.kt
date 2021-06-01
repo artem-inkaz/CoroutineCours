@@ -46,8 +46,8 @@ class MainActivity : AppCompatActivity() {
     private fun onRun() {
 
         scope.launch(CoroutineName("1")) {
-//Размер буфера в таком канале ограничен только количеством доступной памяти
-            val channel = Channel<Int>(Channel.Factory.UNLIMITED)
+//Канал с размером буфера = 64 по умолчанию. Это значение можно поменять в JVM
+            val channel = Channel<Int>(Channel.Factory.BUFFERED)
             launch {
                 repeat(7) {
                 delay(300)
