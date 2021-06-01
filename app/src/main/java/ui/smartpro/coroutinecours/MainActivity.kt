@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
 private fun onRun() {
     log("onRun start")
     try {
-        scope.launch {
+        thread {
             Integer.parseInt("a")
         }
     } catch (e:Exception) {
@@ -53,67 +53,29 @@ private fun onRun() {
 
     log("onRun end")
 }
-// Будет ошибка
-//Запускаем, смотрим логи:
+//Вместо корутины мы просто создаем новый поток. И в нем выполняем код, который выбросит исключение.
+// Корутина работает именно по этому принципу, если рассматривать ее упрощенно.
+//
+//
+//
+//Смотрим лог:
 //
 //onRun start
 //onRun end
-//E/AndroidRuntime: FATAL EXCEPTION: DefaultDispatcher-worker-2
-//  Process: com.startandroid.coroutinescourse, PID: 6718
+//E/AndroidRuntime: FATAL EXCEPTION: Thread-2
+//  Process: com.startandroid.coroutinescourse, PID: 6881
 //  java.lang.NumberFormatException: For input string: "a"
 //    at java.lang.Integer.parseInt(Integer.java:615)
 //    at java.lang.Integer.parseInt(Integer.java:650)
-//    at com.startandroid.coroutinescourse.MainActivity$onRun$1.invokeSuspend(MainActivity.kt:59)
-//    at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
-//    at kotlinx.coroutines.DispatchedTask.run(Dispatched.kt:241)
-//    at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:594)
-//    at kotlinx.coroutines.scheduling.CoroutineScheduler.access$runSafely(CoroutineScheduler.kt:60)
-//    at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:740)
+//    at com.startandroid.coroutinescourse.MainActivity$onRun$1.invoke(MainActivity.kt:59)
+//    at com.startandroid.coroutinescourse.MainActivity$onRun$1.invoke(MainActivity.kt:21)
+//    at kotlin.concurrent.ThreadsKt$thread$thread$1.run(Thread.kt:30)
 //
-//Приложение свалилось с крэшем. Давайте разбираться почему.
+//Похоже на предыдущий случай. Система выполнила у потока метод run.
+// А тот выполнил код внутри блока thread, получил исключение и крэшнул приложение.
 //
-//
-//
-//Вспомним похожие простые примеры, которые мы делали в прошлых уроках.
-// В них мы выяснили, что метод onRun использует билдер launch, чтобы создать и запустить корутину,
-// и сам после этого сразу завершается. А корутина живет своей жизнью в отдельном потоке.
-// Вот именно поэтому try-catch здесь и не срабатывает.
-//
-//Что делает билдер launch? Если вкратце, он формирует контекст, создает пару Continuation+Job,
-// и отправляет Continuation диспетчеру, который помещает его в очередь.
-// Ни в одном из этих шагов не было никакой ошибки, поэтому try-catch ничего не поймал.
-// Билдер завершил свою работу, и метод onRun успешно завершился.
-//
-//У диспетчера есть свободный поток, который постоянно мониторит очередь.
-// Он обнаруживает там Continuation и начинает его выполнение.
-// И вот тут уже возникает NumberFormatException.
-// Но наш try-catch до него никак не мог дотянуться.
-// Т.к. он покрывал только создание и запуск корутины, но не выполнение корутины,
-// т.к. выполнение ушло в отдельный поток.
-//
-//
-//
-//Обратите внимание на стэк методов в логе. Читаем их снизу вверх.
-//
-//CoroutineScheduler$Worker - это поток, который из очереди берет таски и выполняет их.
-// Система выполняет его метод run.
-//
-//DispatchedTask - обертка, в которой находится Continuation.
-// В его методе run происходит вызов Continuation.resumeWith.
-// Это и есть тот самый resume метод,
-// про который я часто говорил в прошлых уроках про Continuation и диспетчеры.
-// В этом методе происходит вызов метода invokeSuspend, в котором содержится наш код корутины:
-//MainActivity$onRun$1.invokeSuspend
-//
-//Т.е. MainActivity$onRun$1 - это Continuation класс.
-// И если вы найдете его в папке \app\build\tmp\kotlin-classes\debug\<package_name>
-// и декомпилируете, то сможете увидеть примерный код этого класса.
-//
-//Метод invokeSuspend выполняет код корутины, и в нем то и происходит исключение,
-// когда котлин пытается распарсить букву в цифру (Integer.parseInt).
-//
-//Выполнение этого кода в потоке диспетчера мы не оборачивали в try-catch,
-// поэтому исключение не поймали.
+//А наш try-catch снова не у дел. Потому что он покрывал создание и запуск нового потока,
+// но не выполнение кода в нем.
 
 
 
