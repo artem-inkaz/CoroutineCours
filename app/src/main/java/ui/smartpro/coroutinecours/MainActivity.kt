@@ -46,12 +46,8 @@ class MainActivity : AppCompatActivity() {
     private fun onRun() {
 
         scope.launch(CoroutineName("1")) {
-    //Conflated
-    //В этом режиме буфера нет. Канал способен хранить в себе только одно значение.
-    // Но теперь каждый send не ждет, пока получатель заберет значение,
-    // а просто оставляет его в канале. При этом send своими данными перезаписывает данные
-    // предыдущего send.
-            val channel = Channel<Int>(Channel.Factory.CONFLATED)
+//Размер буфера в таком канале ограничен только количеством доступной памяти
+            val channel = Channel<Int>(Channel.Factory.UNLIMITED)
             launch {
                 repeat(7) {
                 delay(300)
@@ -77,22 +73,6 @@ class MainActivity : AppCompatActivity() {
                 }
         }
 }
-
- //Лог:
-    //14:37:35.657 send 0
-    //14:37:35.658 received 0
-    //14:37:35.958 send 1
-    //14:37:36.261 send 2
-    //14:37:36.562 send 3
-    //14:37:36.664 received 3
-    //14:37:36.865 send 4
-    //14:37:37.165 send 5
-    //14:37:37.468 send 6
-    //14:37:37.468 close
-    //14:37:37.673 received 6
-    //
-    //Метод send не ждет вызовов receive, он просто помещает в канал свое значение, заменяя предыдущее.
-    // Метод receive получает значение, которое на момент вызова этого метода находится в канале.
 
 
 
