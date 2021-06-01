@@ -56,14 +56,14 @@ class MainActivity : AppCompatActivity() {
         //   log("coroutine exception $exception")
         //}
         //
-        //val scope = CoroutineScope(Job() + Dispatchers.Default + handler)
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + handler)
 
         scope.launch(handler) {
             TimeUnit.MILLISECONDS.sleep(1000)
             Integer.parseInt("a")
         }
 
-        scope2.launch {
+        scope.launch {
             repeat(5) {
                 TimeUnit.MILLISECONDS.sleep(300)
                 log("second coroutine isActive ${isActive}")
@@ -71,23 +71,29 @@ class MainActivity : AppCompatActivity() {
         }
 }
 
-//Разные scope никак не связаны между собой. Давайте это проверим на том же самом примере,
-// но поместим первую и вторую корутину в разные scope.
-
-//Вторая корутина теперь вызывается в другом scope.
+//В примерах с CoroutineExceptionHandler мы убедились, что scope отменяет своих детей,
+// когда в одном из них происходит ошибка. Пусть даже эта ошибка и была передана в обработчик.
+// Такое поведение родителя далеко не всегда может быть удобным.
+// Поэтому у нас есть возможность это отключить.
+//
+//Для этого надо в scope вместо обычного Job() использовать SupervisorJob().
+// Он отличается от Job() тем, что не отменяет всех своих детей при возникновении ошибки в одном из них.
 //
 //
 //
-//Лог:
+//Рассмотрим снова пример с двумя корутинами одного scope,
+// но теперь в scope в качестве Job используем SupervisorJob()
 //
-//15:37:32.830 second coroutine isActive true
-//15:37:33.132 second coroutine isActive true
-//15:37:33.435 second coroutine isActive true
-//15:37:33.535 first coroutine exception java.lang.NumberFormatException: For input string: "a"
-//15:37:33.736 second coroutine isActive true
-//15:37:34.038 second coroutine isActive true
+//Запускаем, смотрим лог:
 //
-//Ошибка в корутине в первом scope никак не повлияла на корутину во втором.
+//14:34:36.641 second coroutine isActive true
+//14:34:36.943 second coroutine isActive true
+//14:34:37.244 second coroutine isActive true
+//14:34:37.280 first coroutine exception java.lang.NumberFormatException: For input string: "a"
+//14:34:37.546 second coroutine isActive true
+//14:34:37.955 second coroutine isActive true
+//
+//После того, как первая корутина выбросила исключение, scope не стал отменять вторую корутину.
 
 
 
