@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity() {
         scope.launch(CoroutineName("1")) {
 
             val channel = Channel<Int>()
-
+//случай, когда отправитель хочет отправить данные, но получатель еще не готов их принять.
             launch {
                 delay(300)
                 log("send 5")
