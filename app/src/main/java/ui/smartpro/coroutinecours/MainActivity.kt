@@ -55,15 +55,7 @@ class MainActivity : AppCompatActivity() {
 // Для этого мы можем поместить их в coroutineScope
             // try catch
             try {
-                coroutineScope {
-                    launch(CoroutineName("1_1")) {
-                        // ...
-                    }
-
-                    launch(CoroutineName("1_2")) {
-                        // exception
-                    }
-                }
+                twoCoroutines()
             } catch (e: Exception) {
                 // ...
             }
