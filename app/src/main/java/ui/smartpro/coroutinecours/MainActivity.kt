@@ -54,12 +54,22 @@ class MainActivity : AppCompatActivity() {
                 log("send 5")
                 channel.send(5)
                 log("send, done")
+                //Можно закрыть канал
+//                channel.close()
+
             }
 
             launch {
                 delay(300)
                 log("receive")
                 val i = channel.receive()
+//Этот цикл будет получать данные из канала, пока отправитель не закроет канал.
+// После чего цикл завершится, и код пойдет дальше. И никакие ошибки ловить не придется.
+                for (element in channel) {
+                    // ...
+                }
+//Также, на стороне получателя мы можем использовать метод chanel.isClosedForReceive,
+// чтобы понять, что канал закрыт и данных в нем не осталось.
                 log("receive $i, done")
             }
         }
