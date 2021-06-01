@@ -19,7 +19,7 @@ class MainActivity : AppCompatActivity() {
     //указываем время
     private var formatter = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
 
-    private val scope = CoroutineScope(Dispatchers.Unconfined)
+//   private val scope = CoroutineScope(Dispatchers.Unconfined)
 
     private var job: Job? = null
 
@@ -41,33 +41,40 @@ class MainActivity : AppCompatActivity() {
     }
 
 private fun onRun() {
- //   val scope = CoroutineScope(Dispatchers.Default)
-         scope.launch {
-            log("start coroutine")
-            val data = getData()
-            log("end coroutine")
-             // работает в Dispatchers.Main
-//            updateUI(data)
-
+   val scope = CoroutineScope(Dispatchers.Default)
+        val job =  scope.launch {
+            log("parent start")
+            launch {
+                log("child start")
+                delay(1000)
+                log("child end")
+            }
+            log("parent end")
         }
 }
-//Логи:
+
+//И знаем, как он сработает:
 //
-//start coroutine [main]
-//suspend function, start [main]
-//suspend function, background work [Thread-2]
-//end coroutine [Thread-2]
+//21:20:42.969 parent start
+//21:20:42.970 parent end
+//21:20:42.970 child start
+//21:20:43.971 child end
 //
-//Билдер корутины был вызван в обычном коде Activity, т.е. в Main потоке.
-// При старте корутины диспетчер Unconfined не стал отправлять ее в отдельный поток.
-// Выполнение продолжилось в Main потоке и по логам (start coroutine) мы видим,
-// что корутина начала свою работу в этом потоке.
+//Код родительской корутины выполняется сразу и не ждет выполнения дочерней.
+// Это, пожалуй, является одним из самых непонятных моментов, когда начинаешь изучать корутины.
+// Т.е. вроде одна корутина родительская, а внутри нее дочерняя,
+// но при этом родительская корутина не ждет дочернюю и никакой связи между ними не видно.
 //
-//Далее в этом же потоке произошел вызов suspend функции (suspend function, start).
-// Suspend функция создала отдельный поток (Thread-2) для своей работы и ушла работать
-// туда (suspend function, background work). Когда она закончила, она в этом же потоке вызвала метод resume,
-// чтобы продолжить выполнение корутины. Диспетчер Unconfined не стал отправлять корутину в отдельный поток,
-// поэтому корутина продолжила (end coroutine) свое выполнение в потоке Thread-2.
+//
+//
+//Чтобы увидеть эту связь, мы будем проверять джоб родительской корутины.
+// Метод job.isActive подскажет нам статус корутины - еще работает или уже завершена.
+// Фокус в том, что даже если родительская корутина выполнила весь свой код, это еще не значит,
+// что она завершена. Это зависит от того, завершились ли ее дочерние корутины.
+// И именно в этом проявляется связь между родительской и дочерней корутинами.
+
+
+
 
 
 //простой метод, чтобы доставать из контекста и выводить в лог Job и диспетчер.
@@ -114,7 +121,7 @@ private fun onRun() {
     override fun onDestroy() {
         super.onDestroy()
         log("onDestroy")
-        scope.cancel()
+//        scope.cancel()
     }
 
     private fun log(text: String) {
