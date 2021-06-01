@@ -21,6 +21,7 @@ class MainActivity : AppCompatActivity() {
     private var formatter = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
 
    private val scope = CoroutineScope(Job()+Dispatchers.Default)
+    private val scope2 = CoroutineScope(Job()+Dispatchers.Default)
 
     private var job: Job? = null
 
@@ -51,7 +52,7 @@ class MainActivity : AppCompatActivity() {
             Integer.parseInt("a")
         }
 
-        scope.launch {
+        scope2.launch {
             repeat(5) {
                 TimeUnit.MILLISECONDS.sleep(300)
                 log("second coroutine isActive ${isActive}")
@@ -59,33 +60,23 @@ class MainActivity : AppCompatActivity() {
         }
 }
 
-//Запускаем две корутины в одном scope. Первая корутина вызовет исключение через 1000 мсек.
-// Вторая корутина 5 раз с интервалом в 300 мсек выводит в лог свой статус.
+//Разные scope никак не связаны между собой. Давайте это проверим на том же самом примере,
+// но поместим первую и вторую корутину в разные scope.
+
+//Вторая корутина теперь вызывается в другом scope.
+//
+//
 //
 //Лог:
 //
-//15:36:34.043 second coroutine isActive true
-//15:36:34.344 second coroutine isActive true
-//15:36:34.646 second coroutine isActive true
-//15:36:34.745 first coroutine exception java.lang.NumberFormatException: For input string: "a"
-//15:36:34.947 second coroutine isActive false
-//15:36:35.248 second coroutine isActive false
+//15:37:32.830 second coroutine isActive true
+//15:37:33.132 second coroutine isActive true
+//15:37:33.435 second coroutine isActive true
+//15:37:33.535 first coroutine exception java.lang.NumberFormatException: For input string: "a"
+//15:37:33.736 second coroutine isActive true
+//15:37:34.038 second coroutine isActive true
 //
-//Поначалу вторая корутина сообщает о том, что полет нормальный и все ок.
-// Далее в первой корутине происходит исключение и уходит в обработчик, который пишет об этом в лог.
-// А scope, узнав, что в первой корутине произошла ошибка, отменяет вторую.
-// Это видно по ее статусу в логе.
-//
-//
-//Это может быть удобным, если вам при возникновении ошибки в одной операции,
-// надо отменить другие операции.
-// Вы просто помещаете корутины с этими операциями в один scope.
-//
-//
-//Учитывайте, что scope отменяет не только корутины, но и себя. А это означает,
-// что в этом scope мы больше не сможем запустить корутины.
-
-
+//Ошибка в корутине в первом scope никак не повлияла на корутину во втором.
 
 
 
