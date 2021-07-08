@@ -11,6 +11,7 @@ import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.channels.produce
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -76,6 +77,94 @@ class MainActivity : AppCompatActivity() {
 //А если у нас есть suspend функция, которая ничего не принимает на вход и возвращает результат:
     suspend fun getData(): Data
     val flow3 = ::getData.asFlow()
+
+    //Intermediate
+//Примеры Intermediate операторов - map, filter, take, zip, combine, withIndex, scan, debounce,
+// distinctUntilChanged, drop, sample.
+    private fun onRun2(){
+//Оператор map умножит на 10 значения 1,2,3, которые придут из Flow. В итоге получился новый Flow,
+// который вернет 10,20,30. При этом оператор map сам по себе не запускает Flow, к которому мы его
+// применяем. Он просто создает новый Flow-обертку поверх старого. Работать он начнет,
+// когда мы вызовем collect.
+        val flow = flowOf(1,2,3).map{it*10}
+    }
+
+    private fun onRun3(){
+        //1
+        val flowStrings = flow {
+            emit("abc")
+            emit("def")
+            emit("ghi")
+        }
+    }
+    //2
+    //нам надо эти строки привести к верхнему регистру (закапслочить) и вывести их в лог
+    flowStrings.collect {
+        log(it.toUpperCase())
+    }
+    //3
+//мы создали Flow, который запрашивает элементы из другого Flow, преобразует их и отправляет получателю.
+    flow {
+        flowStrings.collect {
+            emit(it.toUpperCase())
+        }
+    }
+
+//В итоге мы можем создать кучу таких оберток, одну над другой.
+
+// важно понимать один момент. Наш созданный Flow не запустит flowStrings.collect,
+// пока сам не будет запущен. Т.е. весь этот код начнет работу только когда кто-то вызовет collect
+// для нашего созданного Flow.
+
+//    flowStrings
+//    .map {
+//        // ...
+//    }
+//    .filter {
+//        // ...
+//    }
+//    // ...
+
+//Упакуем наш код в extension-метод toUpperCase и получим свой оператор для Flow<String>:
+    fun Flow<String>.toUpperCase(): Flow<String> = flow {
+        collect {
+            emit(it.toUpperCase())
+        }
+    }
+
+//Теперь мы можем использовать этот оператор, чтобы Flow со строками преобразовать в Flow с теми же
+// строками, но в верхнем регистре:
+    flowStrings.toUpperCase().collect {
+        log(it)
+    }
+
+//В качестве еще одного примера можно рассмотреть такой код:
+
+//flow {
+//   emit("start")
+//   flowStrings.collect {
+//       emit(it)
+//   }
+//   emit("end")
+//}
+//Создаем Flow-обертку над flowStrings. Эта обертка просто пересылает данные из flowStrings никак их не трансформируя. Но перед этой отправкой и после нее она отправляет строки start и end. Т.е. таким образом можно сделать операторы типа startWith и endWith.
+
+//В примере выше, кстати, конструкцию
+
+//flowStrings.collect {
+//   emit(it)
+//}
+//можно заменить кодом
+
+//emitAll(flowStrings)
+//Метод emitAll просто переотправит все элементы из flowStrings.
+
+//Важный момент. Когда вы используете map, filter или создаете свой оператор, не забывайте,
+// что используемый в них код преобразования данных будет выполнен в suspend функции collect,
+// которая начнет всю работу Flow. Это значит что ваш код не должен быть тяжелым или блокировать поток.
+// Не забывайте, что suspend функция может быть запущена и в main потоке.
+
+
 
     // можно coroutineScope и все его содержимое вынести в отдельную suspend функцию
     private suspend fun twoCoroutines() {
@@ -157,12 +246,6 @@ class MainActivity : AppCompatActivity() {
 //Данные, которые будут получены сразу отображаем на экране.
     private fun updateUI(data:String) {
         label.text = data
-    }
-
-    private fun onRun2(){
-        log("onRun2, start")
-//        job?.start()
-        log("onRun2, end")
     }
 
     private fun onCancel(){
