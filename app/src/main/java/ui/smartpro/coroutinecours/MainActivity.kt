@@ -1,5 +1,6 @@
 package ui.smartpro.coroutinecours
 
+import android.location.Criteria
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -44,6 +45,161 @@ class MainActivity : AppCompatActivity() {
         btnCancel.setOnClickListener {
             onCancel()
         }
+    }
+
+//поиск авиарейсов. Предположим, что мы написали некую функцию агрегатор,
+// которая по определенным критериям ищет рейсы.
+    fun serchFlight(criteria: Criteria):  List<Flight> {
+
+        val results = mutableListOf<Flight>()
+
+        for ( airCarrier in  getAirCarriers()) {
+            //Найденный рейс добавляется в коллекцию, которая затем возвращается,
+                // как результат работы функции.
+            val flight = airCarrier.searchFlight(criteria)
+            results.add(flight) 
+        }
+        //Вызываем ее, получаем полный список рейсов через какое-то время и выводим их на экран.
+        return results
+
+    }
+ //Вызов
+    val flights = searchFlight(criteria)
+    showFlights(flights)
+
+ //Было бы круто выдавать рейсы по одному, по мере их нахождения у авиаперевозчиков.
+    // то позволит начать выводить на экран первые результаты поиска почти сразу же после старта,
+    // а не ждать пока поиск полностью завершится.
+ fun searchFlight(criteria: Criteria, onFind: (Flight) -> Unit) {
+     for (airCarrier in getAirCarriers()) {
+         val flight = airCarrier.searchFlight(criteria)
+         onFind(flight)
+     }
+ }
+//Вызов
+    searchFlight(criteria) { flight ->
+        showFlight(flight)
+    }
+
+//наша функция при запуске не выполняла поиск, а возвращала объект-функцию, которая умеет выполнять поиск.
+// И клиент мог бы у себя в коде ее хранить и передавать, как обычный объект.
+// А когда нужно, он мог бы ее запускать.
+fun searchFlight(criteria: Criteria): ((Flight) -> Unit) -> Unit {
+    return { onFind ->
+        for (airCarrier in getAirCarriers()) {
+            val flight = airCarrier.searchFlight(criteria)
+            onFind(flight)
+        }
+    }
+}
+
+    //Вызов
+    val search = searchFlight(criteria)
+
+/// ...
+
+    search.invoke { flight ->
+        showFlight(flight)
+    }
+
+//Давайте снова перепишем нашу функцию, но в этот раз используем Flow.
+fun searchFlight(criteria: Criteria): Flow<Flight> {
+    return flow {
+        for (airCarrier in getAirCarriers()) {
+            val flight = airCarrier.searchFlight(criteria)
+            emit(flight)
+        }
+    }
+}
+
+    //Вызов
+    val searchFlow = searchFlight(criteria)
+
+// ...
+
+    scope.launch {
+        searchFlow.collect { flight ->
+            showFlight(flight)
+        }
+    }
+
+// Работа с Flow
+    //1. Создается объект Flow, он хранит в себе блок flow, в котором содержится код по
+// генерации данных и отправке их в метод emit.
+    val flow = flow {
+        // flow block
+        for (i in 1..10) {
+            delay(100)
+            emit(i)
+        }
+    }
+//2. Чтобы запустить работу и начать получать данные Flow, мы вызываем его метод collect и
+// на вход этому методу передаем блок collect, в который мы хотели бы получать данные,
+// создаваемые в блоке flow.
+    flow.collect { i ->
+        // collect block
+        log(i)
+    }
+
+    //Отличие от каналов
+    //И с каналом и с Flow можно отправлять/получать данные. Возможно, именно поэтому их можно
+    // спутать при поверхностном рассмотрении.
+    //
+    //Но, канал - это просто потокобезопасный инструмент для передачи данных между корутинами.
+    // Он не создает ничего. Только передает. Т.е. должны существовать отправитель и получатель.
+    // Они работают в своих корутинах независимо друг от друга, используя канал для обмена данными.
+    //
+    //А Flow - это генератор данных. В этом случае нет явного отправителя.
+    // Вместо него есть создатель. Он создает Flow и дает его получателю.
+    // Получатель запускает Flow в своей корутине и, можно сказать, сам же становится отправителем.
+
+//Расширенная suspend функция
+//Есть еще один интересный момент, который я хотел бы обсудить. Ничего нового сейчас не скажу, но акцентирую внимание на том, что может быть неочевидно.
+//
+//Обычно suspend функция возвращает нам одно значение. И пока мы ждем это значение, корутина приостанавливается. Flow позволяет расширить это поведение. Он делает так, что мы можем получать последовательность (поток) данных вместо одного значения. И это будет происходит в suspend режиме. Т.е. корутина будет приостанавливаться на время ожидания каждого элемента.
+
+//В принципе мы уже это видели в этом уроке ранее, но давайте взглянем еще раз на примере с поиском рейсов.
+//
+//Есть такая suspend функция:
+
+//suspend fun searchFlight(criteria: Criteria): List<Flight>
+//Она по заданным критериям возвращает список полетов.
+//
+//Мы запускаем ее в корутине и ждем, пока она отработает и вернет нам данные.
+
+//launch {
+//    val flights = searchFlight(criteria)
+//}
+//Ничего необычного. suspend функция возвращает одно значение. И пока мы ждем это значение, корутина приостанавливается.
+
+//Переписываем функцию, чтобы она возвращала Flow:
+
+//fun searchFlight5(criteria: Criteria): Flow<Flight>
+//Теперь эта функция не обязана быть suspend.
+
+//И вызываем ее в корутине
+
+//launch {
+//    searchFlight(criteria).collect { flight ->
+//        showFlight(flight)
+//    }
+//}
+//В этом случае suspend функцией является метод collect().
+// Но он не возвращает нам одно единственное значение.
+// Он позволяет нам получить последовательность данных.
+// И он приостанавливает корутину на время следующего элемента.
+// А когда последовательность закончится, корутина пойдет дальше.
+
+//Т.е. Flow расширяет возможности suspend функций,
+// позволяя нам получать последовательность данных в suspend режиме.
+
+// Flow является холодным источником данных. Он для каждого получателя будет генерировать данные заново.
+//
+//Т.е. каждый вызов collect будет приводить к тому, что снова будет запускаться блок flow и
+// генерировать элементы. Потому что collect - это всего лишь вызов блока кода flow.
+
+    private fun getAirCarriers() {
+
     }
 
     @ExperimentalCoroutinesApi
