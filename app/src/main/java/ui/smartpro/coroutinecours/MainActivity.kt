@@ -72,98 +72,59 @@ class MainActivity : AppCompatActivity() {
 // Билдер flowOf может сделать то же самое еще лаконичнее. На вход он принимает vararg:
 
         val flow2 = flowOf("a","b","c")
-
 }
-//А если у нас есть suspend функция, которая ничего не принимает на вход и возвращает результат:
-    suspend fun getData(): Data
-    val flow3 = ::getData.asFlow()
 
-    //Intermediate
-//Примеры Intermediate операторов - map, filter, take, zip, combine, withIndex, scan, debounce,
-// distinctUntilChanged, drop, sample.
+//Terminal
+//Примеры Terminal операторов - collect, single, reduce, count, first, toList, toSet, fold.
+//
+//Разберем главное отличие от Intermediate операторов.
+// Intermediate операторы берут Flow, добавляют к нему какое-либо преобразование его данных и возвращают новый Flow.
+// Но они не запускают Flow и не получают результаты его работы.
+//
+//А Terminal операторы запускают Flow так же, как это делает collect. Соответственно,
+// результатом их работы является не Flow, а данные, полученные из
+// Flow и обработанные определенным образом.
+
     private fun onRun2(){
-//Оператор map умножит на 10 значения 1,2,3, которые придут из Flow. В итоге получился новый Flow,
-// который вернет 10,20,30. При этом оператор map сам по себе не запускает Flow, к которому мы его
-// применяем. Он просто создает новый Flow-обертку поверх старого. Работать он начнет,
-// когда мы вызовем collect.
-        val flow = flowOf(1,2,3).map{it*10}
+        val count = flowOf("a", "b", "c").count()
+//Он посчитает и вернет количество элементов Flow. А для этого ему, очевидно, придется запустить
+// Flow и дождаться, пока он закончит свою работу.
+        // Под капотом
+//Тут уже не создается никакой Flow, как в Intermediate операторах.
+// Потому что мы сейчас делаем не преобразование данных, а хотим получить данные.
+// Вызывается collect и считается количество полученных элементов.
+
+//Т.к. Terminal операторам приходится вызывать collect, все они являются suspend функциями и
+// вызываться могут только в корутине (или в другой suspend функции).
     }
 
-    private fun onRun3(){
-        //1
+    @InternalCoroutinesApi
+    private suspend fun onRun3(){
         val flowStrings = flow {
             emit("abc")
             emit("def")
             emit("ghi")
         }
-    }
-    //2
-    //нам надо эти строки привести к верхнему регистру (закапслочить) и вывести их в лог
-    flowStrings.collect {
-        log(it.toUpperCase())
-    }
-    //3
-//мы создали Flow, который запрашивает элементы из другого Flow, преобразует их и отправляет получателю.
-    flow {
+        val sb = StringBuilder()
         flowStrings.collect {
-            emit(it.toUpperCase())
+            sb.append(it).append(",")
         }
+        val result = sb.toString()
+        //В result мы получим все элементы Flow, собранные в одну строку.
+        val result2 = flowStrings.join()
     }
 
-//В итоге мы можем создать кучу таких оберток, одну над другой.
+    // extension-метод join
+    @InternalCoroutinesApi
+    suspend fun Flow<String>.join(): String {
+        val sb = StringBuilder()
 
-// важно понимать один момент. Наш созданный Flow не запустит flowStrings.collect,
-// пока сам не будет запущен. Т.е. весь этот код начнет работу только когда кто-то вызовет collect
-// для нашего созданного Flow.
-
-//    flowStrings
-//    .map {
-//        // ...
-//    }
-//    .filter {
-//        // ...
-//    }
-//    // ...
-
-//Упакуем наш код в extension-метод toUpperCase и получим свой оператор для Flow<String>:
-    fun Flow<String>.toUpperCase(): Flow<String> = flow {
         collect {
-            emit(it.toUpperCase())
+            sb.append(it).append(",")
         }
+
+        return sb.toString()
     }
-
-//Теперь мы можем использовать этот оператор, чтобы Flow со строками преобразовать в Flow с теми же
-// строками, но в верхнем регистре:
-    flowStrings.toUpperCase().collect {
-        log(it)
-    }
-
-//В качестве еще одного примера можно рассмотреть такой код:
-
-//flow {
-//   emit("start")
-//   flowStrings.collect {
-//       emit(it)
-//   }
-//   emit("end")
-//}
-//Создаем Flow-обертку над flowStrings. Эта обертка просто пересылает данные из flowStrings никак их не трансформируя. Но перед этой отправкой и после нее она отправляет строки start и end. Т.е. таким образом можно сделать операторы типа startWith и endWith.
-
-//В примере выше, кстати, конструкцию
-
-//flowStrings.collect {
-//   emit(it)
-//}
-//можно заменить кодом
-
-//emitAll(flowStrings)
-//Метод emitAll просто переотправит все элементы из flowStrings.
-
-//Важный момент. Когда вы используете map, filter или создаете свой оператор, не забывайте,
-// что используемый в них код преобразования данных будет выполнен в suspend функции collect,
-// которая начнет всю работу Flow. Это значит что ваш код не должен быть тяжелым или блокировать поток.
-// Не забывайте, что suspend функция может быть запущена и в main потоке.
-
 
 
     // можно coroutineScope и все его содержимое вынести в отдельную suspend функцию
