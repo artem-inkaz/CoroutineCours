@@ -126,6 +126,32 @@ class MainActivity : AppCompatActivity() {
         return sb.toString()
     }
 
+//Прочее
+//Есть еще несколько операторов, которые я хотел бы упомянуть.
+
+//Несколько простых операторов из названия которых сразу понятен их смысл: onEach, onStart, OnCompletion, onEmpty. Все они - Intermediate. Т.е. не запускают текущий Flow, а создают обертку над ним. И все они кроме onEach могут вызвать метод emit, чтобы отправить данные.
+
+//А также есть Intermediate оператор transform, который рекомендуется к использованию для создания своих Intermediate операторов.
+//
+//На вход он получает данные, а вот вместо выходных данных он должен вызывать emit.
+//
+//Пример:
+
+//flowStrings.transform { value ->
+//   emit(value)
+//   emit(value)
+//}
+//Этот transform создаст Flow, который будет получать данные из flowStrings и отправлять их дважды. Т.е. мы создали оператор, который можно было бы назвать double.
+
+//Еще один пример:
+
+//flowStrings.transform { value ->
+//   value.forEach { emit(it) }
+//}
+//Этот transform каждую полученную строку разбивает на символы (forEach) и каждый из них отправляет отдельно.
+//
+//Т.е. из Flow<String> мы получим Flow<Char>.
+
 
     // можно coroutineScope и все его содержимое вынести в отдельную suspend функцию
     private suspend fun twoCoroutines() {
