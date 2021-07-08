@@ -45,6 +45,10 @@ dependencies {
     //Coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2-native-mt'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.4.1'
+    //View Model
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'

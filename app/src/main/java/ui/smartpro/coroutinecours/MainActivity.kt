@@ -39,12 +39,60 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        lifecycleScope.launch {
+            while (true) {
+                delay(1000)
+                log("work")
+            }
+        }
+
+//lifecycleScope может быть использован в MVP для вызова корутин в презентере
+// (если конечно вы умышленно не держите презентер живым при поворотах экрана)
+//
+//
+//
+//У lifecycleScope есть билдеры launchWhenCreated, launchWhenStarted и
+// launchWhenResumed для вызова корутин с отслеживанием текущего состояния LifeCycle.
+
+//MainScope
+//Еще одна возможность создания scope - это MainScope.
+//
+//Пример:
+
+//val scope = MainScope()
+//Под капотом похожий набор компонентов:
+
+//ContextScope(SupervisorJob() + Dispatchers.Main)
+//Но его главное отличие от двух предыдущих - он не привязан ни к чему.
+//
+//viewModelScope был привязан к модели. lifecycleScope - к LifecycleOwner.
+// И нам не надо было думать о том, когда отменять эти scope.
+// Они автоматически отменялись объектом, к которому они привязаны.
+//
+//А MainScope - сам по себе, и может быть создан и использован где угодно.
+// Но нам надо самим следить за тем, когда его отменять.
+// Т.е. если у нас есть какой-то свой объект с жизненным циклом и ему надо запускать корутины,
+// то мы можем при его создании создавать ему MainScope, а при его уничтожении - отменять этот scope.
+
+//Свой Scope
+//Если вам не подходят все вышеописанные scope, то всегда можно создать свой с помощью CoroutineScope.
+// И в нем самому указать Job нужного типа, диспетчер, Handler и прочее.
+
+//val scope = CoroutineScope(Job() + Dispatchers.Main + handler)
+
+//Также этот вариант подходит, когда нам в нашем объекте надо создать несколько scope с одним
+// жизненным циклом, но разным диспетчером или типом Job, например.
+//
+//Главное - это привязка к какому-либо Lifecycle, чтобы корутины не оставались без присмотра.
+// Хотя я видел примеры создания глобального scope, который был один на все приложение и использовался
+// для различных вещей не привязанных к экрану, типа нотификаций.
+
         btnRun.setOnClickListener {
-            onRun()
+
         }
 
         btnRun2.setOnClickListener {
-            onRun2()
+
         }
 
         btnCancel.setOnClickListener {
@@ -52,188 +100,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @ExperimentalCoroutinesApi
-    private fun onRun() {
-//Основной способ создания Flow - это билдер flow
-//В билдер мы передаем блок кода, который будет запущен, когда получатель запустит этот Flow.
-// Методом emit мы отправляем данные получателю.
-        val flow =flow{
-            emit("a")
-            emit("b")
-            emit("c")
-        }
-//Также существуют билдеры-обертки asFlow и flowOf, которые избавляют нас от написания очевидного
-// и простого кода, а под капотом используют билдер flow.
-//
-//Пример создания Flow из коллекции с помощью asFlow:
+    private fun onRun(){
+        log("before")
 
-        val flow1 = listOf("a","b","c").asFlow()
-
-// Билдер flowOf может сделать то же самое еще лаконичнее. На вход он принимает vararg:
-
-        val flow2 = flowOf("a","b","c")
-}
-
-//Terminal
-//Примеры Terminal операторов - collect, single, reduce, count, first, toList, toSet, fold.
-//
-//Разберем главное отличие от Intermediate операторов.
-// Intermediate операторы берут Flow, добавляют к нему какое-либо преобразование его данных и возвращают новый Flow.
-// Но они не запускают Flow и не получают результаты его работы.
-//
-//А Terminal операторы запускают Flow так же, как это делает collect. Соответственно,
-// результатом их работы является не Flow, а данные, полученные из
-// Flow и обработанные определенным образом.
-
-    private fun onRun2(){
-        val count = flowOf("a", "b", "c").count()
-//Он посчитает и вернет количество элементов Flow. А для этого ему, очевидно, придется запустить
-// Flow и дождаться, пока он закончит свою работу.
-        // Под капотом
-//Тут уже не создается никакой Flow, как в Intermediate операторах.
-// Потому что мы сейчас делаем не преобразование данных, а хотим получить данные.
-// Вызывается collect и считается количество полученных элементов.
-
-//Т.к. Terminal операторам приходится вызывать collect, все они являются suspend функциями и
-// вызываться могут только в корутине (или в другой suspend функции).
-    }
-
-    @InternalCoroutinesApi
-    private suspend fun onRun3(){
-        val flowStrings = flow {
-            emit("abc")
-            emit("def")
-            emit("ghi")
-        }
-        val sb = StringBuilder()
-        flowStrings.collect {
-            sb.append(it).append(",")
-        }
-        val result = sb.toString()
-        //В result мы получим все элементы Flow, собранные в одну строку.
-        val result2 = flowStrings.join()
-    }
-
-    // extension-метод join
-    @InternalCoroutinesApi
-    suspend fun Flow<String>.join(): String {
-        val sb = StringBuilder()
-
-        collect {
-            sb.append(it).append(",")
+        scope.launch {
+            log("launch")
         }
 
-        return sb.toString()
+        log("after")
     }
+//Если в scope используется диспетчер Main, то мы в логах получим такой результат:
+//before
+//after
+//launch
 
-//Прочее
-//Есть еще несколько операторов, которые я хотел бы упомянуть.
-
-//Несколько простых операторов из названия которых сразу понятен их смысл: onEach, onStart, OnCompletion, onEmpty. Все они - Intermediate. Т.е. не запускают текущий Flow, а создают обертку над ним. И все они кроме onEach могут вызвать метод emit, чтобы отправить данные.
-
-//А также есть Intermediate оператор transform, который рекомендуется к использованию для создания своих Intermediate операторов.
-//
-//На вход он получает данные, а вот вместо выходных данных он должен вызывать emit.
-//
-//Пример:
-
-//flowStrings.transform { value ->
-//   emit(value)
-//   emit(value)
-//}
-//Этот transform создаст Flow, который будет получать данные из flowStrings и отправлять их дважды. Т.е. мы создали оператор, который можно было бы назвать double.
-
-//Еще один пример:
-
-//flowStrings.transform { value ->
-//   value.forEach { emit(it) }
-//}
-//Этот transform каждую полученную строку разбивает на символы (forEach) и каждый из них отправляет отдельно.
-//
-//Т.е. из Flow<String> мы получим Flow<Char>.
-
-
-    // можно coroutineScope и все его содержимое вынести в отдельную suspend функцию
-    private suspend fun twoCoroutines() {
-        coroutineScope {
-            launch(CoroutineName("1_1")) {
-                // ...
-            }
-
-            launch(CoroutineName("1_2")) {
-                // exception
-            }
-        }
-    }
-
-//Есть какая-то suspend функция, которая перед тем, как начать асинхронную работу, проверяет кэш.
-// Если она находит там результат, то сразу отправляет его обратно в корутину.
-//
-//Если этот код выбросит исключение, то это будет равносильно тому,
-// что suspend функция в корутине выбросила исключение.
-    suspend fun someFunction(): String =
-            suspendCancellableCoroutine { continuation ->
-
-//                val result = getFromCache()
-
-//                if (result != null) {
-//                    continuation.resume(result)
-//                } else {
-                    // async code
- //               }
-
-            }
-
-// ВАЖНо
-//Асинхронная часть
-//Если же ошибка произойдет в асинхронной части и не будет там поймана в try-catch,
-// то приложение свалится с крэшем. И даже если обернуть suspend функцию в try-catch или использовать
-// CoroutineExceptionHandler, это не поможет.
-//
-//Потому что это был отдельный поток. И выполнялась там не корутина,
-// которая автоматически ловит все ошибки своего кода, а обычный код.
-// А непойманное исключение в обычном коде приводит к крэшу.
-
-
-//Расширение для CoroutineScope. Мы сможем запускать его прямо в корутине.
-// Оно будет периодически выводить в лог имя и isActive статус корутины
-   fun CoroutineScope.repeatIsActive() {
-       repeat(5) {
-           TimeUnit.MILLISECONDS.sleep(300)
-           log("Coroutine_${coroutineContext[CoroutineName]?.name} isActive $isActive")
-       }
-   }
-
-
-//простой метод, чтобы доставать из контекста и выводить в лог Job и диспетчер.
-// Это поможет нам наглядно понять, что происходит с контекстом
-    private fun contextToString(context: CoroutineContext) : String =
-            "Job = ${context[Job]}, Dispatchers = ${context[ContinuationInterceptor]}"
-
-//suspend функция приостанавливает код корутины, выполняет свою работу в фоновом потоке,
-// а затем возобновляет корутину. Поток корутины при этом не блокируется.
-// suspend функция код должен быть запущен в корутине, и вне корутины ее не запустить.
-    private suspend fun getData(): String =
-        suspendCoroutine {
-            //покажет из какого потока была запущена эта функция
-            log("suspend function, start")
-            thread {
-                //в каком потоке она выполняет свою работу
-                log("suspend function, background work")
-                TimeUnit.MILLISECONDS.sleep(3000)
-                it.resume("Data!")
-            }
-        }
-
-    private suspend fun getData2(): String {
-        delay(1500)
-        return "data2"
-    }
-
-//Данные, которые будут получены сразу отображаем на экране.
-    private fun updateUI(data:String) {
-        label.text = data
-    }
+//А если мы используем диспетчер Main.immediate, то лог будет следующий:
+//before
+//launch
+//after
 
     private fun onCancel(){
         log("onCancel")
